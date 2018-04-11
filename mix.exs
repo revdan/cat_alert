@@ -41,7 +41,7 @@ defmodule CatAlert.Mixfile do
       {:phoenix_live_reload, "~> 1.0", only: :dev},
       {:gettext, "~> 0.11"},
       {:cowboy, "~> 1.0"},
-      {:httpoison, "~> 0.13"},
+      {:httpoison, "~> 1.1"},
       {:poison, "~> 3.1"},
       {:bamboo, "~> 0.8"},
       {:extwitter, "~> 0.8"}
