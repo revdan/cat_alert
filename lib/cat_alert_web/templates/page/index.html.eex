@@ -1,0 +1,6 @@
+<div class="jumbotron">
+  <div class="lead">
+    <%= img_tag("images/cat.gif") %>
+  </div>
+  <h1>⌁cat alert⌁</h1>
+</div>
