@@ -2,6 +2,7 @@ defmodule CatAlert.Tweet do
   require Logger
 
   def new_cat(cat) do
+    Logger.info("new cat: #{inspect cat}")
     case Mix.env in [:dev, :test] do
       true  -> IO.inspect "no tweet sent in dev"
       false -> alert_new_cat(cat)
