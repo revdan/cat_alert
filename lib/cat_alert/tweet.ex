@@ -14,7 +14,7 @@ defmodule CatAlert.Tweet do
 
     message = "CAT ALERT 🐈\n\n#{cat.name}\n\n#{cat.url}"
 
-    case HTTPoison.get("http:#{cat.thumb_url}") do
+    case HTTPoison.get(cat.thumb_url) do
       {:ok, %HTTPoison.Response{status_code: 200, body: body}} ->
         ExTwitter.update_with_media(message, body)
       _ ->
