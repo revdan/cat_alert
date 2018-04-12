@@ -14,7 +14,7 @@ defmodule CatAlert.Periodically do
   end
 
   def handle_info(type, state) do
-    spawn(fn() -> CatAPI.get(type) end)
+    spawn(fn() -> CatAPI.process_cats(type) end)
 
     schedule_work(state)
 
