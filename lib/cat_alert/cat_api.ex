@@ -1,86 +1,60 @@
 defmodule CatAlert.CatAPI do
   require Logger
 
-  alias CatAlert.{Cat, Repo, Notifier}
+  alias CatAlert.{APIConnection, Cat, Repo, Notifier}
 
   @base_url "https://www.battersea.org.uk"
-  @api_url "#{@base_url}/api/animals/cats"
+  @cat_url  "/api/animals/cats"
 
-  def get(type) do
-    {:ok, response} =
-      HTTPoison.get(@api_url,
-        [], [ssl: [{:versions, [:'tlsv1.2']}]])
+  def process_cats(type) do
+    response = APIConnection.get!(@cat_url)
 
-    process_response_body(type, response.body)
+    process_cats(type, response.body)
   end
 
-  def process_response_body(:find_new_cats, body) do
-    response = Poison.decode!(body)
-
-    outstanding_ids =
-      response["animals"]
-      |> new_ids()
-      |> outstanding(existing_ids())
-
-    # TODO async
-    Enum.each(response["animals"], &(process_cat(outstanding_ids, &1)))
+  def process_cats(type, %{"animals" => cats}) do
+    Enum.each(cats, fn(cat) -> process_cat(type, cat) end)
   end
 
-  def process_response_body(:update_cats, body) do
-    response = Poison.decode!(body)
-
-    # TODO async
-    Enum.each(response["animals"], &update_cat/1)
-  end
-
-  def process_response_body(unknown, body) do
+  def process_cats(unknown, body) do
     Logger.info "UNKNOWN ACTION: #{inspect unknown}\n#{inspect body}"
   end
 
-  defp new_ids(cats) do
-    Enum.map(cats, fn({_, cat}) -> cat["nid"] end)
+  defp process_cat(type, {_, cat}) do
+    cat
+    |> cat_params
+    |> try_write(type)
   end
 
-  defp existing_ids do
-    Cat
-    |> Repo.all
-    |> Enum.map(&(&1.nid))
-  end
+  defp try_write(params, :find_new_cats) do
+    case insert_cat(params) do
+      {:ok, new_cat} ->
+        Notifier.notify(new_cat)
 
-  defp outstanding(new, old) do
-    new -- old
-  end
-
-  defp process_cat(ids, {_, cat}) do
-    case cat["nid"] in ids do
-      true  -> register_new_cat(cat)
-      false -> Logger.info "skipping #{cat["title"]}"
+        {:ok, new_cat}
+      error ->
+        Logger.error("skipping upsert #{params.name} because:\n#{inspect error}")
     end
   end
 
-  defp update_cat({_, cat}) do
-    params = %{
-      url: @base_url <> cat["path"],
-      thumb_url: cat["field_animal_thumbnail"],
-      dob: cat["field_animal_age"],
-      location: cat["field_animal_centre"],
-      date_published: cat["field_animal_date_published"],
-      reserved: cat["field_animal_reserved"],
-      rehomed: cat["field_animal_homed"],
-      flagged: to_string(cat["flagged"])
-    }
-
-    #TODO upsert
-    current_cat = Repo.get_by(Cat, nid: cat["nid"])
-
-    insert_cat(current_cat, params)
+  defp try_write(params, :update_cats) do
+    case update_cat(params) do
+      {:ok, updated_cat} ->
+        Logger.info("updated #{inspect updated_cat}")
+      error ->
+        Logger.error("skipping update #{params.name} because:\n#{inspect error}")
+    end
   end
 
-  defp register_new_cat(cat) do
-    params = %{
+  defp try_write(unknown_type, params) do
+    Logger.error("received #{unknown_type} with #{inspect params}")
+  end
+
+  defp cat_params(cat) do
+    %{
       name: cat["title"],
       nid: cat["nid"],
-      url: @base_url <>  cat["path"],
+      url: @base_url <> cat["path"],
       thumb_url: cat["field_animal_thumbnail"],
       dob: cat["field_animal_age"],
       location: cat["field_animal_centre"],
@@ -95,19 +69,18 @@ defmodule CatAlert.CatAPI do
       rehomed: cat["field_animal_homed"],
       flagged: to_string(cat["flagged"])
     }
-
-    Logger.info "WELCOME #{cat["title"]}!"
-
-    {:ok, new_cat} = insert_cat(%Cat{}, params)
-
-    Notifier.notify(new_cat)
-
-    {:ok, new_cat}
   end
 
-  defp insert_cat(cat, params) do
-    cat
+  defp insert_cat(params) do
+    %Cat{}
     |> Cat.changeset(params)
-    |> Repo.insert
+    |> Repo.insert(on_conflict: :raise)
+  end
+
+  defp update_cat(params) do
+    %Cat{}
+    |> Cat.changeset(params)
+    |> Repo.insert(on_conflict: :replace_all,
+                   conflict_target: [:nid])
   end
 end

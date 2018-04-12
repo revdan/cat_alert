@@ -10,8 +10,10 @@ defmodule CatAlert.Tweet do
   end
 
   defp alert_new_cat(cat) do
+    # TODO plug
     admin_login()
 
+    #TODO """
     message = "CAT ALERT 🐈\n\n#{cat.name}\n\n#{cat.url}"
 
     case HTTPoison.get(cat.thumb_url) do
