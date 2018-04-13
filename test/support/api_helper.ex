@@ -1,7 +1,7 @@
 defmodule CatAlert.APIHelper do
 
   def cats_json() do
-    %{"body" =>
+    %HTTPoison.Response{body:
       %{"animals" =>
          %{"0" => %{"field_animal_age" => "2012-02-15",
                     "field_animal_breed" => "himalayan",

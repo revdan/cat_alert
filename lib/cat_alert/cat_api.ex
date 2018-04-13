@@ -10,7 +10,7 @@ defmodule CatAlert.CatAPI do
   def get(type) do
     response = @connection.get!(@cat_url)
 
-    process_cats(response["body"], type)
+    process_cats(response.body, type)
   end
 
   defp process_cats(%{"animals" => cats}, type) do
