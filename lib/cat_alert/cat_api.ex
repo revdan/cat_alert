@@ -1,53 +1,31 @@
 defmodule CatAlert.CatAPI do
   require Logger
 
-  alias CatAlert.{APIConnection, Cat, Repo, Notifier}
+  alias CatAlert.{APIConnection, CatService}
 
   @base_url "https://www.battersea.org.uk"
   @cat_url  "/api/animals/cats"
 
-  def process_cats(type) do
+  def get(type) do
     response = APIConnection.get!(@cat_url)
 
-    process_cats(type, response.body)
+    process_cats(response.body, type)
   end
 
-  def process_cats(type, %{"animals" => cats}) do
-    Enum.each(cats, fn(cat) -> process_cat(type, cat) end)
+  defp process_cats(%{"animals" => cats}, type) do
+    cats
+    |> Enum.map(&Task.async(fn -> process_cat(&1, type) end))
+    |> Enum.map(&Task.await/1)
   end
 
-  def process_cats(unknown, body) do
+  defp process_cats(body, unknown) do
     Logger.info "UNKNOWN ACTION: #{inspect unknown}\n#{inspect body}"
   end
 
-  defp process_cat(type, {_, cat}) do
+  defp process_cat({_, cat}, type) do
     cat
-    |> cat_params
-    |> try_write(type)
-  end
-
-  defp try_write(params, :find_new_cats) do
-    case insert_cat(params) do
-      {:ok, new_cat} ->
-        Notifier.notify(new_cat)
-
-        {:ok, new_cat}
-      error ->
-        Logger.error("skipping upsert #{params.name} because:\n#{inspect error}")
-    end
-  end
-
-  defp try_write(params, :update_cats) do
-    case update_cat(params) do
-      {:ok, updated_cat} ->
-        Logger.info("updated #{inspect updated_cat}")
-      error ->
-        Logger.error("skipping update #{params.name} because:\n#{inspect error}")
-    end
-  end
-
-  defp try_write(unknown_type, params) do
-    Logger.error("received #{unknown_type} with #{inspect params}")
+    |> cat_params()
+    |> CatService.process_cat(type)
   end
 
   defp cat_params(cat) do
@@ -69,18 +47,5 @@ defmodule CatAlert.CatAPI do
       rehomed: cat["field_animal_homed"],
       flagged: to_string(cat["flagged"])
     }
-  end
-
-  defp insert_cat(params) do
-    %Cat{}
-    |> Cat.changeset(params)
-    |> Repo.insert(on_conflict: :raise)
-  end
-
-  defp update_cat(params) do
-    %Cat{}
-    |> Cat.changeset(params)
-    |> Repo.insert(on_conflict: :replace_all,
-                   conflict_target: [:nid])
   end
 end
