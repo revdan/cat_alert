@@ -15,7 +15,7 @@ defmodule CatAlert.CatService do
   end
 
   def process_cat(params, :update_cats) do
-    case update_cat(params) do
+    case insert_cat(params, :replace) do
       {:ok, updated_cat} ->
         Logger.info("updated #{inspect updated_cat}")
 
@@ -28,14 +28,14 @@ defmodule CatAlert.CatService do
   end
 
   defp insert_cat(params) do
-    %Cat{}
-    |> Cat.changeset(params)
-    |> Repo.insert(on_conflict: :raise)
+    Repo.insert(
+      Cat.changeset(%Cat{}, params),
+      on_conflict: :raise)
   end
 
-  defp update_cat(params) do
-    %Cat{}
-    |> Cat.changeset(params)
-    |> Repo.insert(on_conflict: :replace_all, conflict_target: [:nid])
+  defp insert_cat(params, :replace) do
+    Repo.insert(
+      Cat.changeset(%Cat{}, params),
+      on_conflict: :replace_all, conflict_target: [:nid])
   end
 end

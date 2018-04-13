@@ -6,6 +6,8 @@ use Mix.Config
 # The watchers configuration can be used to run external
 # watchers to your application. For example, we use it
 # with brunch.io to recompile .js and .css sources.
+config :cat_alert, api_service: CatAlert.APIConnection
+
 config :cat_alert, CatAlertWeb.Endpoint,
   http: [port: 4000],
   debug_errors: true,

@@ -5,6 +5,8 @@
 # is restricted to this project.
 use Mix.Config
 
+config :cat_alert, api_service: CatAlert.APIConnection
+
 # General application configuration
 config :cat_alert,
   ecto_repos: [CatAlert.Repo]

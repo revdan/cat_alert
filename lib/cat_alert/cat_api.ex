@@ -1,15 +1,16 @@
 defmodule CatAlert.CatAPI do
   require Logger
 
-  alias CatAlert.{APIConnection, CatService}
+  alias CatAlert.CatService
 
+  @connection Application.get_env(:cat_alert, :api_service)
   @base_url "https://www.battersea.org.uk"
   @cat_url  "/api/animals/cats"
 
   def get(type) do
-    response = APIConnection.get!(@cat_url)
+    response = @connection.get!(@cat_url)
 
-    process_cats(response.body, type)
+    process_cats(response["body"], type)
   end
 
   defp process_cats(%{"animals" => cats}, type) do

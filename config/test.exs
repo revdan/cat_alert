@@ -1,5 +1,7 @@
 use Mix.Config
 
+config :cat_alert, api_service: CatAlert.FakeAPIConnection
+
 # We don't run a server during test. If one is required,
 # you can enable the server option below.
 config :cat_alert, CatAlertWeb.Endpoint,
