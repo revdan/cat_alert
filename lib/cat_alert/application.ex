@@ -8,7 +8,7 @@ defmodule CatAlert.Application do
     children = [
       supervisor(CatAlert.Repo, []),
       supervisor(CatAlertWeb.Endpoint, []),
-      worker(CatAlert.Periodically, [:find_new_cats, Time.minutes(3)], id: :find_new_cats),
+      worker(CatAlert.Periodically, [:find_new_cats, Time.seconds(30)], id: :find_new_cats),
       worker(CatAlert.Periodically, [:update_cats, Time.minutes(60)], id: :update_cats)
     ]
 

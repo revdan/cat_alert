@@ -40,11 +40,12 @@ defmodule CatAlert.Mixfile do
       {:phoenix_html, "~> 2.10"},
       {:phoenix_live_reload, "~> 1.0", only: :dev},
       {:gettext, "~> 0.11"},
+      {:hackney, "~> 1.14"},
       {:cowboy, "~> 1.0"},
       {:httpoison, "~> 1.3"},
       {:poison, "~> 3.1"},
       {:bamboo, "~> 0.8"},
-      {:extwitter, "~> 0.8"}
+      {:extwitter, "~> 0.9"}
     ]
   end
 
